@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 # Enable corepack for pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 WORKDIR /build
 
@@ -39,16 +39,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 make g++ gcc && \
     rm -rf /var/lib/apt/lists/*
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
 
 WORKDIR /app
 
 # Copy package files and source before install (for workspace resolution)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/ ./packages/
-
-# Approve better-sqlite3 build script before install
-RUN pnpm config set enable-pre-post-scripts false
 
 # Install only production dependencies (ignore scripts to skip husky)
 RUN pnpm install --frozen-lockfile --prod --ignore-scripts

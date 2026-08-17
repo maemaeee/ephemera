@@ -47,6 +47,7 @@ const EnvDefaultsSchema = z.object({
 
 // Schema for step 1: System configuration
 const Step1Schema = z.object({
+  searchProvider: z.enum(["annas_archive", "libgen"]).optional().default("annas_archive"),
   searcherBaseUrl: z.string().url(),
   searcherApiKey: z.string().optional(),
   quickBaseUrl: z.string().url().or(z.literal("")).optional(),
@@ -305,6 +306,7 @@ app.openapi(postStep1Route, async (c) => {
       await db
         .update(appConfig)
         .set({
+          searchProvider: body.searchProvider || "annas_archive",
           searcherBaseUrl: body.searcherBaseUrl,
           searcherApiKey: body.searcherApiKey || null,
           quickBaseUrl:
@@ -321,6 +323,7 @@ app.openapi(postStep1Route, async (c) => {
       await db.insert(appConfig).values({
         id: 1,
         isSetupComplete: false,
+        searchProvider: body.searchProvider || "annas_archive",
         authMethod: null, // Auth methods are configured in Settings, not during setup
         searcherBaseUrl: body.searcherBaseUrl,
         searcherApiKey: body.searcherApiKey || null,

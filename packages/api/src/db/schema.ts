@@ -232,6 +232,7 @@ export const appConfig = sqliteTable("app_config", {
   isSetupComplete: integer("is_setup_complete", { mode: "boolean" })
     .notNull()
     .default(false),
+  searchProvider: text("search_provider").notNull().default("annas_archive"),
   authMethod: text("auth_method"),
   searcherBaseUrl: text("searcher_base_url"),
   searcherApiKey: text("searcher_api_key"),

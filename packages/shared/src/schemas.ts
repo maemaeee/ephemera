@@ -1167,8 +1167,14 @@ export const emailTestResponseSchema = z.object({
 
 export type EmailTestResponse = z.infer<typeof emailTestResponseSchema>;
 
+export const searchProviderSchema = z.enum(["annas_archive", "libgen"]);
+export type SearchProvider = z.infer<typeof searchProviderSchema>;
+
 // System configuration schema (folder paths, download settings)
 export const systemConfigSchema = z.object({
+  searchProvider: searchProviderSchema
+    .default("annas_archive")
+    .describe("Search provider format ('annas_archive' or 'libgen')"),
   searcherBaseUrl: z
     .string()
     .nullable()
@@ -1219,6 +1225,9 @@ export type SystemConfig = z.infer<typeof systemConfigSchema>;
 
 // System configuration update request schema
 export const updateSystemConfigSchema = z.object({
+  searchProvider: searchProviderSchema
+    .optional()
+    .describe("Search provider format ('annas_archive' or 'libgen')"),
   searcherBaseUrl: z
     .string()
     .min(1)

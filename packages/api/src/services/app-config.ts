@@ -86,6 +86,7 @@ class AppConfigService {
     return {
       id: 1,
       isSetupComplete: false,
+      searchProvider: "annas_archive",
       authMethod: null,
       searcherBaseUrl: null,
       searcherApiKey: null,
@@ -108,6 +109,7 @@ class AppConfigService {
     updates: Partial<
       Pick<
         AppConfig,
+        | "searchProvider"
         | "searcherBaseUrl"
         | "searcherApiKey"
         | "quickBaseUrl"
@@ -138,6 +140,9 @@ class AppConfigService {
       };
 
       // Only update fields that are explicitly provided (including null)
+      if (updates.searchProvider !== undefined) {
+        configData.searchProvider = updates.searchProvider;
+      }
       if (updates.searcherBaseUrl !== undefined) {
         configData.searcherBaseUrl = updates.searcherBaseUrl;
       }
@@ -185,6 +190,14 @@ class AppConfigService {
   clearCache(): void {
     this.configCache = null;
     this.cacheExpiry = 0;
+  }
+
+  /**
+   * Get search provider format ('annas_archive' | 'libgen')
+   */
+  async getSearchProvider(): Promise<"annas_archive" | "libgen"> {
+    const config = await this.getConfig();
+    return (config.searchProvider as "annas_archive" | "libgen") || "annas_archive";
   }
 
   /**
@@ -239,6 +252,7 @@ class AppConfigService {
    * Get config for API response (with date formatting)
    */
   async getConfigForResponse(): Promise<{
+    searchProvider: "annas_archive" | "libgen";
     searcherBaseUrl: string | null;
     searcherApiKey: string | null;
     quickBaseUrl: string | null;
@@ -251,6 +265,7 @@ class AppConfigService {
   }> {
     const config = await this.getConfig();
     return {
+      searchProvider: (config.searchProvider as "annas_archive" | "libgen") || "annas_archive",
       searcherBaseUrl: config.searcherBaseUrl,
       searcherApiKey: config.searcherApiKey,
       quickBaseUrl: config.quickBaseUrl,

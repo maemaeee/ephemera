@@ -10,6 +10,7 @@ import {
   PasswordInput,
   Stack,
   Stepper,
+  Select,
   Text,
   TextInput,
   Title,
@@ -34,9 +35,9 @@ function SetupWizard() {
   const [active, setActive] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [checkingSetup, setCheckingSetup] = useState(true);
 
-  // Setup key state (for older installs)
+  // Setup status state
+  const [checkingSetup, setCheckingSetup] = useState(true);
   const [requiresSetupKey, setRequiresSetupKey] = useState(false);
   const [setupKeyValidated, setSetupKeyValidated] = useState(false);
   const [setupKeyInput, setSetupKeyInput] = useState("");
@@ -44,7 +45,15 @@ function SetupWizard() {
   const [validatingKey, setValidatingKey] = useState(false);
 
   // Step 1: System Configuration
-  const [step1, setStep1] = useState({
+  const [step1, setStep1] = useState<{
+    searchProvider: "annas_archive" | "libgen";
+    searcherBaseUrl: string;
+    searcherApiKey: string;
+    quickBaseUrl: string;
+    downloadFolder: string;
+    ingestFolder: string;
+  }>({
+    searchProvider: "annas_archive",
     searcherBaseUrl: "",
     searcherApiKey: "",
     quickBaseUrl: "",
@@ -93,6 +102,7 @@ function SetupWizard() {
         if (response.ok) {
           const defaults = await response.json();
           setStep1((prev) => ({
+            searchProvider: defaults.searchProvider || prev.searchProvider,
             searcherBaseUrl: defaults.searcherBaseUrl || prev.searcherBaseUrl,
             searcherApiKey: defaults.searcherApiKey || prev.searcherApiKey,
             quickBaseUrl: defaults.quickBaseUrl || prev.quickBaseUrl,
@@ -415,10 +425,42 @@ function SetupWizard() {
                 icon={<IconSettings size={18} />}
               >
                 <Stack gap="md" mt="md">
+                  <Select
+                    label="Search Provider Format"
+                    description="Select the search provider format"
+                    value={step1.searchProvider}
+                    onChange={(val) =>
+                      setStep1({
+                        ...step1,
+                        searchProvider:
+                          (val as "annas_archive" | "libgen") || "annas_archive",
+                      })
+                    }
+                    data={[
+                      {
+                        value: "annas_archive",
+                        label: "Anna's Archive (Default)",
+                      },
+                      {
+                        value: "libgen",
+                        label: "Library Genesis (Libgen)",
+                      },
+                    ]}
+                    required
+                  />
+
                   <TextInput
                     label="Searcher Base URL"
-                    placeholder="https://archive.org"
-                    description="Base URL for your main searcher instance"
+                    placeholder={
+                      step1.searchProvider === "libgen"
+                        ? "https://libgen.co.in"
+                        : "https://annas-archive.gl"
+                    }
+                    description={
+                      step1.searchProvider === "libgen"
+                        ? "Base URL for Libgen search instance"
+                        : "Base URL for Anna's Archive instance"
+                    }
                     required
                     value={step1.searcherBaseUrl}
                     onChange={(e) =>
@@ -438,8 +480,8 @@ function SetupWizard() {
 
                   <TextInput
                     label="Quick Base URL"
-                    placeholder="LG URL for alternative source"
-                    description="Alternative fast download source (optional)"
+                    placeholder="https://libgen.li"
+                    description="Alternative fast download source / Libgen mirror (optional)"
                     value={step1.quickBaseUrl}
                     onChange={(e) =>
                       setStep1({ ...step1, quickBaseUrl: e.target.value })

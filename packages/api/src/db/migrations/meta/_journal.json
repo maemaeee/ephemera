@@ -239,6 +239,13 @@
       "when": 1767046777161,
       "tag": "0033_small_jimmy_woo",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1767050000000,
+      "tag": "0034_search_provider",
+      "breakpoints": true
     }
   ]
 }

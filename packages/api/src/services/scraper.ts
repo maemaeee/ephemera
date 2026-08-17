@@ -5,6 +5,7 @@ import { logger } from "../utils/logger.js";
 import { searchCacheManager } from "./search-cache.js";
 import { appConfigService } from "./app-config.js";
 import { searcherHealthService } from "./searcher-health.js";
+import { libgenScraper } from "./libgen-scraper.js";
 
 /**
  * Internal scrape result that includes block page detection.
@@ -417,21 +418,19 @@ export class SearcherScraper {
   async search(query: SearchQuery): Promise<SearchResponse> {
     const searchId = Math.random().toString(36).substring(7);
 
+    // Check search provider format configuration
+    const searchProvider = await appConfigService.getSearchProvider();
+    if (searchProvider === "libgen") {
+      logger.info(`[${searchId}] Using Libgen search provider format`);
+      return await libgenScraper.search(query);
+    }
+
     // Check if search should be skipped due to blocked status
     if (searcherHealthService.shouldSkipSearch()) {
       logger.warn(
-        `[${searchId}] Skipping search - all searcher variants are blocked (TTL not expired)`,
+        `[${searchId}] Skipping search - all searcher variants are blocked (TTL not expired), trying Libgen fallback...`,
       );
-      return {
-        results: [],
-        pagination: {
-          page: 1,
-          per_page: 50,
-          has_next: false,
-          has_previous: false,
-          estimated_total_results: null,
-        },
-      };
+      return await libgenScraper.search(query);
     }
 
     // Check cache first
@@ -453,17 +452,8 @@ export class SearcherScraper {
     const urlVariants = await appConfigService.getSearcherUrlVariants();
 
     if (urlVariants.length === 0) {
-      logger.error(`[${searchId}] No searcher URL configured`);
-      return {
-        results: [],
-        pagination: {
-          page: 1,
-          per_page: 50,
-          has_next: false,
-          has_previous: false,
-          estimated_total_results: null,
-        },
-      };
+      logger.error(`[${searchId}] No searcher URL configured, trying Libgen...`);
+      return await libgenScraper.search(query);
     }
 
     // Try each URL variant until one succeeds
@@ -516,6 +506,18 @@ export class SearcherScraper {
       await searcherHealthService.markBlocked(
         "All search service domains appear to be blocked.",
       );
+
+      // Try Libgen search as a fallback when all AA domains are blocked
+      logger.info(`[${searchId}] All Anna's Archive domains blocked. Attempting Libgen fallback search...`);
+      try {
+        const libgenResult = await libgenScraper.search(query);
+        if (libgenResult.results.length > 0) {
+          logger.success(`[${searchId}] Libgen fallback succeeded! Found ${libgenResult.results.length} books`);
+          return libgenResult;
+        }
+      } catch (err) {
+        logger.warn(`[${searchId}] Libgen fallback search error:`, getErrorMessage(err));
+      }
     }
 
     // If a fallback URL worked, save it

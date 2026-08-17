@@ -318,6 +318,7 @@ function SettingsComponent() {
   const [newRecipientName, setNewRecipientName] = useState("");
 
   // System configuration state
+  const [searchProvider, setSearchProvider] = useState<"annas_archive" | "libgen">("annas_archive");
   const [searcherBaseUrl, setSearcherBaseUrl] = useState("");
   const [searcherApiKey, setSearcherApiKey] = useState("");
   const [quickBaseUrl, setQuickBaseUrl] = useState("");
@@ -445,6 +446,9 @@ function SettingsComponent() {
   // Sync with system configuration
   useEffect(() => {
     if (systemConfig) {
+      setSearchProvider(
+        (systemConfig.searchProvider as "annas_archive" | "libgen") || "annas_archive",
+      );
       setSearcherBaseUrl(systemConfig.searcherBaseUrl || "");
       setSearcherApiKey(systemConfig.searcherApiKey || "");
       setQuickBaseUrl(systemConfig.quickBaseUrl || "");
@@ -474,6 +478,7 @@ function SettingsComponent() {
       libraryLinkLocation,
     });
     updateSystemConfig.mutate({
+      searchProvider,
       searcherBaseUrl: searcherBaseUrl || null,
       searcherApiKey: searcherApiKey || null,
       quickBaseUrl: quickBaseUrl || null,
@@ -614,7 +619,8 @@ function SettingsComponent() {
         (settings.libraryUrl || "") !== libraryUrl ||
         settings.libraryLinkLocation !== libraryLinkLocation)) ||
     (systemConfig &&
-      ((systemConfig.searcherBaseUrl || "") !== searcherBaseUrl ||
+      (((systemConfig.searchProvider || "annas_archive") !== searchProvider) ||
+        (systemConfig.searcherBaseUrl || "") !== searcherBaseUrl ||
         (systemConfig.searcherApiKey || "") !== searcherApiKey ||
         (systemConfig.quickBaseUrl || "") !== quickBaseUrl ||
         systemConfig.downloadFolder !== downloadFolder ||
@@ -1117,18 +1123,48 @@ function SettingsComponent() {
                       downloads
                     </Text>
 
+                    <Select
+                      label="Search Provider Format"
+                      description="Select the provider format for the primary search engine"
+                      value={searchProvider}
+                      onChange={(val) =>
+                        setSearchProvider(
+                          (val as "annas_archive" | "libgen") || "annas_archive",
+                        )
+                      }
+                      data={[
+                        {
+                          value: "annas_archive",
+                          label: "Anna's Archive (Default)",
+                        },
+                        {
+                          value: "libgen",
+                          label: "Library Genesis (Libgen)",
+                        },
+                      ]}
+                      required
+                    />
+
                     <TextInput
                       label="Searcher Base URL"
-                      description="Base URL for the archive/searcher service (e.g., Anna's Archive)"
+                      description={
+                        searchProvider === "libgen"
+                          ? "Base URL for Libgen search (e.g., https://libgen.co.in, https://libgen.li, https://libgen.is)"
+                          : "Base URL for Anna's Archive (e.g., https://annas-archive.gl, https://annas-archive.pk)"
+                      }
                       value={searcherBaseUrl}
                       onChange={(e) => setSearcherBaseUrl(e.target.value)}
-                      placeholder="https://archive.org"
+                      placeholder={
+                        searchProvider === "libgen"
+                          ? "https://libgen.co.in"
+                          : "https://annas-archive.gl"
+                      }
                       required
                     />
 
                     <PasswordInput
                       label="Searcher API Key"
-                      description="API key for authenticated downloads (optional, for faster downloads)"
+                      description="API key for authenticated downloads (optional, Anna's Archive fast downloads)"
                       value={searcherApiKey}
                       onChange={(e) => setSearcherApiKey(e.target.value)}
                       placeholder="Optional API key"
@@ -1136,10 +1172,10 @@ function SettingsComponent() {
 
                     <TextInput
                       label="Quick Download URL"
-                      description="Alternative fast download source (optional)"
+                      description="Alternative fast download source / Libgen mirror (optional)"
                       value={quickBaseUrl}
                       onChange={(e) => setQuickBaseUrl(e.target.value)}
-                      placeholder="Optional alternative source"
+                      placeholder="https://libgen.li"
                     />
                   </Stack>
                 </Paper>
